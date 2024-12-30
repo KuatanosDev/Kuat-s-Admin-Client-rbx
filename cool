@@ -1,0 +1,429 @@
+-- Создание основного окна
+local mainWindow = Instance.new("ScreenGui")
+mainWindow.Name = "KuatsAdminClient"
+mainWindow.ResetOnSpawn = false
+mainWindow.Parent = game.CoreGui
+
+-- Функция для создания кнопки
+local function createButton(parent, name, text, onClick)
+    local button = Instance.new("TextButton")
+    button.Name = name
+    button.Text = text
+    button.Size = UDim2.new(0, 150, 0, 50)
+    button.BackgroundColor3 = Color3.new(0, 0, 0)
+    button.BorderColor3 = Color3.new(1, 1, 1)
+    button.TextColor3 = Color3.new(1, 1, 1)
+    button.Font = Enum.Font.SourceSansBold
+    button.TextSize = 18
+    button.MouseButton1Click:Connect(onClick)
+    button.Parent = parent
+    return button
+end
+
+-- Функция для создания рамки окна
+local function createWindow()
+    local frame = Instance.new("Frame")
+    frame.Name = "MainFrame"
+    frame.Size = UDim2.new(0, 500, 0, 500)
+    frame.Position = UDim2.new(0.5, -250, 0.5, -250)
+    frame.BackgroundColor3 = Color3.new(0, 0, 0)
+    frame.BorderSizePixel = 0
+    frame.Parent = mainWindow
+
+    -- Надпись наверху окна
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Name = "TitleLabel"
+    titleLabel.Text = "Kuat's Admin Client"
+    titleLabel.Size = UDim2.new(0, 200, 0, 30)
+    titleLabel.Position = UDim2.new(0, 10, 0, 10)
+    titleLabel.TextColor3 = Color3.new(1, 1, 1)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Font = Enum.Font.SourceSansBold
+    titleLabel.TextSize = 18
+    titleLabel.Parent = frame
+
+    -- Кнопка закрытия окна
+    local closeButton = Instance.new("TextButton")
+    closeButton.Name = "CloseButton"
+    closeButton.Text = "X"
+    closeButton.Size = UDim2.new(0, 30, 0, 30)
+    closeButton.Position = UDim2.new(1, -40, 0, 10)
+    closeButton.BackgroundColor3 = Color3.new(0, 0, 0)
+    closeButton.BorderColor3 = Color3.new(1, 1, 1)
+    closeButton.TextColor3 = Color3.new(1, 1, 1)
+    closeButton.Font = Enum.Font.SourceSansBold
+    closeButton.TextSize = 18
+    closeButton.Parent = frame
+
+    -- Минимизируемая кнопка
+    local minimizeButton = Instance.new("TextButton")
+    minimizeButton.Name = "MinimizeButton"
+    minimizeButton.Text = "K"
+    minimizeButton.Size = UDim2.new(0, 30, 0, 30)
+    minimizeButton.Position = closeButton.Position -- Изначально позиционируем кнопку в том же месте, где и "X"
+    minimizeButton.BackgroundColor3 = Color3.new(0, 0, 0)
+    minimizeButton.BorderColor3 = Color3.new(1, 1, 1)
+    minimizeButton.TextColor3 = Color3.new(1, 1, 1)
+    minimizeButton.Font = Enum.Font.SourceSansBold
+    minimizeButton.TextSize = 18
+    minimizeButton.Visible = false
+    minimizeButton.Parent = mainWindow
+
+    -- Обработка закрытия окна
+    closeButton.MouseButton1Click:Connect(function()
+        minimizeButton.Position = closeButton.Position -- Обновляем позицию кнопки "K"
+        frame.Visible = false
+        minimizeButton.Visible = true
+
+        -- Создание уведомления
+        local notification = Instance.new("TextLabel")
+        notification.Name = "Notification"
+        notification.Text = "To open/close the GUI press button K in the top right corner of the screen"
+        notification.Size = UDim2.new(0, 500, 0, 50)
+        notification.Position = UDim2.new(0, 10, 1, -60)
+        notification.BackgroundColor3 = Color3.new(0, 0, 0)
+        notification.BorderColor3 = Color3.new(1, 1, 1)
+        notification.TextColor3 = Color3.new(1, 1, 1)
+        notification.Font = Enum.Font.SourceSansBold
+        notification.TextSize = 18
+        notification.Parent = mainWindow
+
+        -- Удаление уведомления через 10 секунд
+        delay(10, function()
+            notification:Destroy()
+        end)
+    end)
+
+    -- Обработка восстановления окна
+    minimizeButton.MouseButton1Click:Connect(function()
+        frame.Visible = true
+        minimizeButton.Visible = false
+    end)
+
+    -- Перетаскивание окна мышкой
+    local dragging = false
+    local dragInput, mousePos, framePos
+
+    local function startDrag(input)
+        dragging = true
+        mousePos = input.Position
+        framePos = frame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+
+    local function updateDrag(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - mousePos
+            frame.Position = UDim2.new(framePos.X.Scale, framePos.X.Offset + delta.X, framePos.Y.Scale, framePos.Y.Offset + delta.Y)
+        end
+    end
+
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            startDrag(input)
+        end
+    end)
+
+    frame.InputChanged:Connect(function(input)
+        updateDrag(input)
+    end)
+
+    minimizeButton.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            startDrag(input)
+        end
+    end)
+
+    minimizeButton.InputChanged:Connect(function(input)
+        updateDrag(input)
+    end)
+
+    -- Создание кнопок и полосы прокрутки
+    local buttonContainer = Instance.new("ScrollingFrame")
+    buttonContainer.Name = "ButtonContainer"
+    buttonContainer.Size = UDim2.new(1, -20, 1, -80)
+    buttonContainer.Position = UDim2.new(0, 10, 0, 40)
+    buttonContainer.BackgroundTransparency = 1
+    buttonContainer.ScrollBarThickness = 10
+    buttonContainer.CanvasSize = UDim2.new(0, 0, 2, 0)
+    buttonContainer.Parent = frame
+
+    local uiGridLayout = Instance.new("UIGridLayout")
+    uiGridLayout.CellSize = UDim2.new(0, 150, 0, 50)
+    uiGridLayout.CellPadding = UDim2.new(0, 10, 0, 10)
+    uiGridLayout.FillDirectionMaxCells = 3
+    uiGridLayout.Parent = buttonContainer
+
+    local localPlayer = game.Players.LocalPlayer
+    local RunService = game:GetService("RunService")
+    local UIS = game:GetService("UserInputService")
+    local Players = game:GetService("Players")
+
+    -- Кнопка Noclip
+    local noclipEnabled = false
+    local function onNoclipStepped()
+        if noclipEnabled then
+            for _, part in pairs(localPlayer.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        end
+    end
+    createButton(buttonContainer, "NoclipButton", "Noclip", function()
+        noclipEnabled = not noclipEnabled
+        if noclipEnabled then
+            RunService.Stepped:Connect(onNoclipStepped)
+        else
+            for _, part in pairs(localPlayer.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = true
+                end
+            end
+        end
+    end)
+
+    -- Кнопка BackToDeadPosition
+    local respawnEnabled = false
+    local lastDeathPosition = nil
+
+    local function onCharacterDied()
+        if respawnEnabled then
+            local character = localPlayer.Character
+            if character and character:FindFirstChild("HumanoidRootPart") then
+                lastDeathPosition = character.HumanoidRootPart.Position
+            end
+        end
+    end
+
+    local function onCharacterAdded(character)
+        character:WaitForChild("Humanoid")
+        character:WaitForChild("HumanoidRootPart")
+        character.Humanoid.Died:Connect(onCharacterDied)
+        if respawnEnabled and lastDeathPosition then
+            character.HumanoidRootPart.CFrame = CFrame.new(lastDeathPosition)
+        end
+    end
+
+    if localPlayer.Character then
+        onCharacterAdded(localPlayer.Character)
+    end
+    localPlayer.CharacterAdded:Connect(onCharacterAdded)
+
+    createButton(buttonContainer, "BackToDeadPositionButton", "BackToDeadPosition", function()
+        respawnEnabled = not respawnEnabled
+        if not respawnEnabled then
+            lastDeathPosition = nil
+        end
+    end)
+
+    -- Кнопка InfJump
+    local infJumpEnabled = false
+    createButton(buttonContainer, "InfJumpButton", "InfJump", function()
+        infJumpEnabled = not infJumpEnabled
+    end)
+
+    UIS.InputBegan:Connect(function(input, gameProcessedEvent)
+        if input.KeyCode == Enum.KeyCode.Space and not gameProcessedEvent and infJumpEnabled then
+            localPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end)
+
+    -- Кнопка Fly
+    local flyEnabled = false
+    local bodyVelocity
+    local function toggleFly()
+        flyEnabled = not flyEnabled
+        localPlayer.Character.Humanoid.PlatformStand = flyEnabled
+        if flyEnabled then
+            bodyVelocity = Instance.new("BodyVelocity")
+            bodyVelocity.MaxForce = Vector3.new(4000, 4000, 4000)
+            bodyVelocity.Parent = localPlayer.Character.HumanoidRootPart
+            RunService.RenderStepped:Connect(function()
+                if flyEnabled then
+                    local moveDirection = Vector3.new(0, 0, 0)
+                    if UIS:IsKeyDown(Enum.KeyCode.W) then moveDirection = moveDirection + workspace.CurrentCamera.CFrame.LookVector end
+                    if UIS:IsKeyDown(Enum.KeyCode.S) then moveDirection = moveDirection - workspace.CurrentCamera.CFrame.LookVector end
+                    if UIS:IsKeyDown(Enum.KeyCode.A) then moveDirection = moveDirection - workspace.CurrentCamera.CFrame.RightVector end
+                    if UIS:IsKeyDown(Enum.KeyCode.D) then moveDirection = moveDirection + workspace.CurrentCamera.CFrame.RightVector end
+                    if UIS:IsKeyDown(Enum.KeyCode.Space) then moveDirection = moveDirection + Vector3.new(0, 1, 0) end
+                    if UIS:IsKeyDown(Enum.KeyCode.LeftControl) then moveDirection = moveDirection - Vector3.new(0, 1, 0) end
+                    bodyVelocity.Velocity = moveDirection * 50
+                end
+            end)
+        else
+            if bodyVelocity then
+                bodyVelocity:Destroy()
+                bodyVelocity = nil
+            end
+        end
+    end
+
+    createButton(buttonContainer, "FlyButton", "Fly", toggleFly)
+
+    -- Кнопка TpTool
+    createButton(buttonContainer, "TpToolButton", "TpTool", function()
+        local tool = Instance.new("Tool")
+        tool.Name = "Tp Tool"
+        tool.RequiresHandle = true
+        local handle = Instance.new("Part")
+        handle.Name = "Handle"
+        handle.Size = Vector3.new(1, 1, 1)
+        handle.CanCollide = false
+        handle.Transparency = 1
+        handle.Parent = tool
+        tool.Parent = localPlayer.Backpack
+        tool.Activated:Connect(function()
+            local mouse = localPlayer:GetMouse()
+            local targetPosition = mouse.Hit.p
+            localPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
+        end)
+    end)
+
+    -- Кнопка EspPlayers
+    local espEnabled = false
+    local espHighlights = {}
+    local function toggleESP()
+        espEnabled = not espEnabled
+        if espEnabled then
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= localPlayer then
+                    local highlight = Instance.new("Highlight")
+                    highlight.Adornee = player.Character
+                    highlight.FillColor = Color3.fromRGB(255, 255, 255)
+                    highlight.OutlineColor = Color3.fromRGB(0, 0, 0)
+                    highlight.Parent = player.Character
+                    table.insert(espHighlights, highlight)
+                end
+            end
+            Players.PlayerAdded:Connect(function(player)
+                player.CharacterAdded:Connect(function(character)
+                    local highlight = Instance.new("Highlight")
+                    highlight.Adornee = character
+                    highlight.FillColor = Color3.fromRGB(255, 255, 255)
+                    highlight.OutlineColor = Color3.fromRGB(0, 0, 0)
+                    highlight.Parent = character
+                    table.insert(espHighlights, highlight)
+                end)
+            end)
+        else
+            for _, highlight in pairs(espHighlights) do
+                highlight:Destroy()
+            end
+            espHighlights = {}
+        end
+    end
+
+    createButton(buttonContainer, "EspPlayersButton", "EspPlayers", toggleESP)
+
+    -- Кнопка FullBright
+    local isFullBright = false
+    createButton(buttonContainer, "FullBrightButton", "FullBright", function()
+        isFullBright = not isFullBright
+        if isFullBright then
+            game.Lighting.Brightness = 2
+            game.Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+        else
+            game.Lighting.Brightness = 1
+            game.Lighting.Ambient = Color3.fromRGB(127, 127, 127)
+        end
+    end)
+
+    -- Кнопка Infinite yield
+    createButton(buttonContainer, "InfiniteYieldButton", "Infinite Yield", function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
+    end)
+
+    -- Кнопка Night
+    local isNight = false
+    local originalBrightness = game.Lighting.Brightness
+    local originalAmbient = game.Lighting.Ambient
+    createButton(buttonContainer, "NightButton", "Night", function()
+        isNight = not isNight
+        if isNight then
+            game.Lighting.Brightness = 0.2
+            game.Lighting.Ambient = Color3.fromRGB(0, 0, 50)
+        else
+            game.Lighting.Brightness = originalBrightness
+            game.Lighting.Ambient = originalAmbient
+        end
+    end)
+
+    -- Кнопка AntiFling
+    local antiflingEnabled = false
+    local antifling
+    createButton(buttonContainer, "AntiFlingButton", "AntiFling", function()
+        antiflingEnabled = not antiflingEnabled
+        if antiflingEnabled then
+            antifling = RunService.Stepped:Connect(function()
+                for _, player in pairs(Players:GetPlayers()) do
+                    if player ~= localPlayer and player.Character then
+                        for _, v in pairs(player.Character:GetDescendants()) do
+                            if v:IsA("BasePart") then
+                                v.CanCollide = false
+                            end
+                        end
+                    end
+                end
+            end)
+        else
+            if antifling then
+                antifling:Disconnect()
+                antifling = nil
+            end
+        end
+    end)
+
+    -- Кнопка AntiAfk
+    local antiAFK = false
+    local function enableAntiAFK()
+        antiAFK = not antiAFK
+        if antiAFK then
+            spawn(function()
+                while antiAFK do
+                    localPlayer.Character.Humanoid:Move(Vector3.new(0, 0, 1), true)
+                    wait(1.5)
+                    localPlayer.Character.Humanoid:Move(Vector3.new(0, 0, -1), true)
+                    wait(1.5)
+                end
+            end)
+        end
+    end
+    createButton(buttonContainer, "AntiAfkButton", "AntiAfk", enableAntiAFK)
+
+    -- Кнопка Dex
+    createButton(buttonContainer, "DexButton", "Dex", function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Babyhamsta/RBLX_Scripts/main/Universal/BypassedDarkDexV3.lua", true))()
+    end)
+end
+
+-- Создание начального окна
+local initialWindow = Instance.new("Frame")
+initialWindow.Name = "InitialWindow"
+initialWindow.Size = UDim2.new(0.5, 0, 0.2, 0)
+initialWindow.Position = UDim2.new(0.25, 0, 0.4, 0)
+initialWindow.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+initialWindow.BorderSizePixel = 0
+initialWindow.Parent = mainWindow
+
+local initialLabel = Instance.new("TextLabel")
+initialLabel.Name = "InitialLabel"
+initialLabel.Text = "Kuat's Admin Client"
+initialLabel.Size = UDim2.new(1, 0, 1, 0)
+initialLabel.Position = UDim2.new(0, 0, 0, 0)
+initialLabel.TextColor3 = Color3.new(1, 1, 1)
+initialLabel.BackgroundTransparency = 1
+initialLabel.Font = Enum.Font.SourceSansBold
+initialLabel.TextSize = 24
+initialLabel.Parent = initialWindow
+
+-- Анимация исчезновения начального окна и появление основного окна через 3 секунды
+wait(3)
+initialWindow:TweenSize(UDim2.new(0, 0, 0, 0), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 2, true, function()
+    initialWindow:Destroy()
+    createWindow() -- Запуск создания основного окна после исчезновения начального окна
+end)
